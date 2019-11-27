@@ -5,6 +5,7 @@
 //  Created by Jeffrey Lai on 11/6/19.
 //  Copyright © 2019 Jeffrey Lai. All rights reserved.
 //
+//Use of PerformSelector 
 
 import UIKit
 
@@ -23,10 +24,11 @@ class SecondTabVC: UITableViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
 
+
         setupObservers()
         setupView()
         setupTableView()
-        fetchData()
+        performSelector(inBackground: #selector(fetchData), with: nil)
     }
 
     func setupObservers() {
@@ -45,17 +47,17 @@ class SecondTabVC: UITableViewController {
         tableView.register(SubtitleTableViewCell.self, forCellReuseIdentifier: "Cell")
     }
     
-    func fetchData() {
+    @objc func fetchData() {
         let urlString = whitehousePetitionURL
         
         if let url = URL(string: urlString) {
             if let data = try? Data(contentsOf: url) {
                 //It's ok to Parse JSON Data
-                parse(json: data)
+                self.parse(json: data)
+                return
             }
         }
-        
-        showError()
+
     }
     
     func parse(json: Data) {
@@ -63,11 +65,17 @@ class SecondTabVC: UITableViewController {
         
         if let jsonPetitions = try? decoder.decode(Petitions.self, from: json) {
             petitions = jsonPetitions.results
-            tableView.reloadData()
+            performSelector(onMainThread: #selector(reload), with: nil, waitUntilDone: false)
+        } else {
+            performSelector(onMainThread: #selector(showError), with: nil, waitUntilDone: false)
         }
     }
     
-    func showError() {
+    @objc func reload() {
+        tableView.reloadData()
+    }
+    
+    @objc func showError() {
         let ac = UIAlertController(title: "Loading Error", message: "Please check your network connection and try again", preferredStyle: .alert)
         let alert = UIAlertAction(title: "OK", style: .default, handler: nil)
         ac.addAction(alert)

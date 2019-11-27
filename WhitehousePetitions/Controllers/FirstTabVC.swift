@@ -5,6 +5,7 @@
 //  Created by Jeffrey Lai on 11/6/19.
 //  Copyright © 2019 Jeffrey Lai. All rights reserved.
 //
+//Use of GCD with DispatchQueue
 
 import UIKit
 
@@ -51,15 +52,20 @@ class FirstTabVC: UITableViewController {
         displayAll = true
         let urlString = workingURL
         
-        if let url = URL(string: urlString) {
-            if let data = try? Data(contentsOf: url) {
-                //It's ok to Parse JSON Data
-                parse(json: data)
-                return
+        //Adding GCD
+        //QOS can use User Interactive, User Initiated, Utility Queue, and Background Queue
+        DispatchQueue.global(qos: .userInitiated).async {
+            if let url = URL(string: urlString) {
+                if let data = try? Data(contentsOf: url) {
+                    //It's ok to Parse JSON Data
+                    self.parse(json: data)
+                    return
+                }
             }
+            
+            self.showError()
         }
-        
-        showError()
+
     }
     
     func parse(json: Data) {
@@ -67,14 +73,19 @@ class FirstTabVC: UITableViewController {
         
         if let jsonPetitions = try? decoder.decode(Petitions.self, from: json) {
             petitions = jsonPetitions.results
-            tableView.reloadData()
+            
+            DispatchQueue.main.async {
+                self.tableView.reloadData()
+            }
         }
     }
     
     func showError() {
-        let ac = UIAlertController(title: "Loading Error", message: "Please check your network connection and try again", preferredStyle: .alert)
-        let alert = UIAlertAction(title: "OK", style: .default, handler: nil)
-        ac.addAction(alert)
+        DispatchQueue.main.async {
+            let ac = UIAlertController(title: "Loading Error", message: "Please check your network connection and try again", preferredStyle: .alert)
+            let alert = UIAlertAction(title: "OK", style: .default, handler: nil)
+            ac.addAction(alert)
+        }
     }
     
     @objc func catchNotification(notification: Notification) {
