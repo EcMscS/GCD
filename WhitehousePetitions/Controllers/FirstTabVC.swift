@@ -91,22 +91,32 @@ class FirstTabVC: UITableViewController {
     @objc func catchNotification(notification: Notification) {
         guard let searchWords = notification.userInfo!["Search"] as? String else { return }
         
-        if searchWords.isEmpty {
-            displayAll = true
-        } else {
-            searchedPetitions.removeAll()
-            displayAll = false
-            var resultsCount = 0
-            for each in petitions {
-                if each.title.lowercased().contains(searchWords.lowercased()) {
-                    searchedPetitions.insert(each, at: 0)
-                    resultsCount += 1
+        DispatchQueue.global(qos: .userInitiated).async {
+                if searchWords.isEmpty {
+                    self.displayAll = true
+                } else {
+                    self.searchedPetitions.removeAll()
+                    self.displayAll = false
+                    var resultsCount = 0
+                    for each in self.petitions {
+                        if each.title.lowercased().contains(searchWords.lowercased()) {
+                            self.searchedPetitions.insert(each, at: 0)
+                            resultsCount += 1
+                        }
+                    }
+                    
+                    DispatchQueue.main.async {
+                        self.showResultCount(count: resultsCount, words: searchWords)
+                    }
+
                 }
+            
+            DispatchQueue.main.async {
+                self.tableView.reloadData()
             }
-            showResultCount(count: resultsCount, words: searchWords)
         }
-    
-        tableView.reloadData()
+        
+
     }
     
     func showResultCount(count: Int, words: String) {
